@@ -1,0 +1,537 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0 # allow versioning on the API specification(this file)
+  title: OpenAPI specification for Order 
+  description: |
+    Example to illustrate some security risks based on <a href=https://owasp.org/www-project-api-security/>OWASP recommendations</a>'
+  contact: # allow to quickly contact the owner or the point of contact of the API
+    name: API owner
+    url: http://www.example.com/support
+    email: support@example.com  
+
+# x-* fields are part of specification extensions. There are not mandatory according the standard but usefull internally
+# for now these information are not automatically used     
+x-owner: 'DnD'
+x-rate-limiting:
+  # OWASP04:LACK OF RESOURCES & RATE LIMITING
+  # rate limiting will be applied in API manager to protect back-end and avoid malicious usage(DDOS)
+  # usage restriction can be managed at API level, by endpoint or by consumer and are mainly driven by backend capability
+  properties:
+    dev:
+      description: number of max requests admissible for developement environment 
+      type: string
+      default: 100 calls/minute
+    uat:
+      description: number of max requests admissible for integration environment
+      type: string
+      default: 100 calls/minute    
+    prd:
+      description: number of max requests admissible for production environment
+      type: string
+      default: 500 calls/minute    
+# additional information for API publication on API Manager       
+x-publication-information:
+  properties: 
+    category: 
+      description: name of the category under which the API will be published in devportal
+      type: string
+      default: business 
+    apiName: 
+      description: name of the API under which the API will be published in devportal
+      type: string
+      default: OrderApi
+    version: 
+      description: version of the API under which the API will be published in devportal
+      type: string
+      default: '1.0'
+
+tags:
+  - name: Companies
+    description: Everything about companies
+  - name: Orders
+    description: Everything about orders
+  - name: Objects
+    description: Everything about Objects. Surprise at retrieval !  
+  - name: Admin
+    description: Admin endpoints    
+servers:
+  - url: http://localhost.swagger.io/v1
+paths:
+  /companies:
+    get:
+      summary: List all companies
+      description: List all companies authorized by the requester
+      operationId: listCompanies
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #2 scopes are allowed
+          - company:read
+          - order:read
+      
+      tags:
+        - Companies
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: An paged array of companies
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/Orders"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /companies/{companyId}:
+    get:
+      summary: Detailled info on a specific company
+      description: Detailled info on a specific company
+      operationId: showCompanyById
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #2 scopes are allowed
+          - company:read
+          - order:read
+      tags:
+        - Companies
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Companies"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"         
+  /companies/{companyId}/orders:
+    # OWASP01:BROKEN OBJECT LEVEL AUTHORIZATION
+    # user is authorized to get orders of company1
+    # call on companies/company1/orders => OK
+    # call on companies/company2/orders => KO
+    get:
+      summary: List orders for a specific company
+      description: List orders for a specific company
+      operationId: showOrdersByCompanyId
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #1 scope is allowed
+          - order:read
+      tags:
+        - Companies
+        - Orders
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Orders"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: create a new order linked to the company companyId
+      description: create a new order linked to the company companyId
+      operationId: createOrderInCompanyId
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #1 scope write is allowed
+          - order:write
+      tags:
+        - Orders
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: id of the company in which the order will be created
+          schema:
+            type: string
+      requestBody: 
+        description: create order
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"              
+  /companies/{companyId}/orders/{orderId}:
+    get:
+      summary: Info for a specific order in company
+      description: Information for a specific order in company
+      operationId: showOrderByCompanyId
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #1 scope is allowed
+          - order:read
+      tags:
+        - Companies
+        - Orders
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          required: true
+          description: The id of the order to retrieve
+          schema:
+            type: string            
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"        
+    delete:
+      # OWASP05:BROKEN FUNCTION LEVEL AUTHORIZATION
+      # even there are not exposed via API Manager, this endpoint exists and could be used with a non admin scope
+      summary: Admin endpoint to remove specific order in company
+      description: Information for a specific order in company
+      operationId: deleteOrderByCompanyId
+      # OWASP02:BROKEN AUTHENTICATION & OWASP05:BROKEN FUNCTION LEVEL AUTHORIZATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #1 scope is allowed
+          - order:write
+      tags:
+        - Admin
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          required: true
+          description: The id of the order to retrieve
+          schema:
+            type: string            
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"                         
+  /companies/{companyId}/schemalessObject:
+    # OWASP03:EXCESSIVE DATA EXPOSURE
+    # returned object has no schema. Impossible to know its structure. 
+    # the object could be directly mapped on internal object which can contain sensitive data. Potentially no output mapping
+    # bonus: the content type is also not defined. Some client could receive error if omitted 
+    get:
+      summary: List undefined objects for a specific company
+      description: List objects for a specific company
+      operationId: listSchemalessObjectsByCompanyId
+      tags:
+        - Companies
+        - Objects
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema: # OWASP03: generic object without clear definition
+                type: object
+
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+    # OWASP06:MASS ASSIGNMENT
+    # Received payload is blindly transformed into an object and stored
+    # Attackers can guess the fields by looking at the GET request data linked to OWASP03
+      summary: create a new object linked to the company companyId
+      description: create a new object linked to the company companyId
+      operationId: createObjectInCompanyId
+      # OWASP02:BROKEN AUTHENTICATION
+      # apply security to the endpoint with rigth level
+      security: 
+        - OAuth2: #1 scope write is allowed
+          - order:write
+      tags:
+        - Objects
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: id of the company in which the order will be created
+          schema:
+            type: string
+      requestBody: 
+        description: create object
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"               
+  /admin/executeSql:
+    # OWASP08:INJECTION
+    # returned object has no schema. Impossible to know its structure. 
+    # the object could be directly mapped on internal object which can contain sensitive data. Potentially no output mapping
+    # bonus: the content type is also not defined. Some client could receive error if omitted 
+    patch:
+      summary: Administration endpoint at high risk 
+      description: allow to pass a sql statement to the backend for admin tasks 
+      operationId: adminPost
+      tags:
+        - Admin
+      requestBody: 
+        description: create order
+        content:
+          application/json:
+            schema:
+              type: string # malicious command can be injected to produce unexpected results
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema: # OWASP03: generic object without clear definition
+                type: object
+
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"                
+components:
+  # OWASP02:BROKEN AUTHENTICATION
+  # define all allowed security schemes for the API
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://netscaler.domain.com/oauth/authorize
+          tokenUrl: https://netscaler.domain.com/oauth/token
+          scopes:
+            company:read: Grants read access to the company endpoint
+            order:read: Grants read access to the order
+            order:write: Grants write access to the order
+
+  schemas:
+    Company:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: id of the company
+          default: 51
+        name:
+          type: string
+          description: wellknown name of the company
+          default: UnRicardSinonRien
+        internalReference:
+          type: string
+          description: internal reference, usefull for communication 
+    Companies:
+      type: array
+      items:
+        $ref: "#/components/schemas/Company"  
+
+    Order:
+      required:
+        - orderId
+        - customerId
+        - shippingAddress
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: unique id to identify order
+        customerId:
+          type: string
+        shippingAddress:
+          $ref: "#/components/schemas/Address" 
+    Orders:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    Address:
+      type: object
+      description: |
+        An object for storing address related information
+      allOf:
+        - type: object
+          properties:
+            name:
+              $ref: '#/components/schemas/AddressName'
+        - type: object
+          properties:
+            street:
+              $ref: '#/components/schemas/StreetName'
+        - type: object
+          properties:
+            streetNumber:
+              $ref: '#/components/schemas/StreetNumber'
+        - type: object
+          properties:
+            floor:
+              $ref: '#/components/schemas/Floor'
+        - type: object
+          properties:
+            postCode:
+              $ref: '#/components/schemas/PostCode'
+        - type: object
+          properties:
+            city:
+              $ref: '#/components/schemas/CityName'
+        - type: object
+          properties:
+            stateRegion:
+              $ref: '#/components/schemas/StateRegion'
+        - type: object
+          properties:
+            country:
+              $ref: '#/components/schemas/Country'
+
+    AddressName:
+      maxLength: 100
+      type: string
+      description: Name of the address
+      example: Henrik
+    StreetName:
+      maxLength: 100
+      type: string
+      description: The name of the street of the party’s address.
+      example: Kronprincessegade
+    StreetNumber:
+      maxLength: 50
+      type: string
+      description: The number of the street of the party’s address.
+      example: '54'
+    Floor:
+      maxLength: 50
+      type: string
+      description: The floor of the party’s street number.
+      example: 5. sal
+    PostCode:
+      maxLength: 50
+      type: string
+      description: The post code of the party’s address.
+      example: '1306'
+    CityName:
+      maxLength: 65
+      type: string
+      description: The city name of the party’s address.
+      example: København
+    StateRegion:
+      maxLength: 65
+      type: string
+      description: The state/region of the party’s address.
+      example: N/A
+    Country:
+      maxLength: 75
+      type: string
+      description: The country of the party’s address.
+      example: Denmark            
