@@ -9,7 +9,7 @@ info:
     url: http://www.example.com/support
     email: support@example.com  
 
-# x-* fields are part of specification extensions. There are not mandatory according the standard but usefull internally
+# x-* fields are part of specification extensions. There are not mandatory according the standard but useful internally
 # for now these information are not automatically used     
 x-owner: 'DnD'
 x-rate-limiting:
@@ -18,7 +18,7 @@ x-rate-limiting:
   # usage restriction can be managed at API level, by endpoint or by consumer and are mainly driven by backend capability
   properties:
     dev:
-      description: number of max requests admissible for developement environment 
+      description: number of max requests admissible for development environment 
       type: string
       default: 100 calls/minute
     uat:
@@ -56,6 +56,12 @@ tags:
     description: Admin endpoints    
 servers:
   - url: http://localhost.swagger.io/v1
+
+security: 
+ # security at API level. All endpoints of this API are protected by an API Key
+  - ApiKeyAuth:
+    - Ocp-Apim-Subscription-Key
+  
 paths:
   /companies:
     get:
@@ -64,16 +70,15 @@ paths:
       operationId: listCompanies
       # OWASP02:BROKEN AUTHENTICATION
       # apply security to the endpoint with rigth level
-      security: 
+      security: # we have another security level on this endpoint with oauth
         - OAuth2: #2 scopes are allowed
           - company:read
           - order:read
-      
       tags:
         - Companies
       parameters:
-        - name: limit
-          in: query
+        - name: limit # result pagination
+          in: query # can be also passed in header
           description: How many items to return at one time (max 100)
           required: false
           schema:
@@ -81,17 +86,35 @@ paths:
             format: int32
       responses:
         '200':
-          description: An paged array of companies
+          description: An non paged array of companies
           headers:
-            x-next:
+            x-next: 
               description: A link to the next page of responses
               schema:
                 type: string
           content:
             application/json:    
               schema:
+                $ref: "#/components/schemas/Orders"      
+        '206': # pagination response. Not all documents have been fetched
+          description: An paged array of companies
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string        
+          content:
+            application/json:    
+              schema:
                 $ref: "#/components/schemas/Orders"
-        default:
+        '401': # error customization
+          description: authentication error or bad credential
+          content:
+            application/json:
+              schema: 
+                type: string
+                default: unauthorized        
+        default: # default error
           description: unexpected error
           content:
             application/json:
@@ -124,6 +147,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Companies"
+        '404':
+          description: The company was not found
+          # no content for this response
         default:
           description: unexpected error
           content:
@@ -369,7 +395,7 @@ paths:
       requestBody: 
         description: create order
         content:
-          application/json:
+          '*/*':
             schema:
               type: string # malicious command can be injected to produce unexpected results
       responses:
@@ -393,7 +419,7 @@ components:
     ApiKeyAuth:
       type: apiKey
       in: header
-      name: X-API-Key
+      name: Ocp-Apim-Subscription-Key
     OAuth2:
       type: oauth2
       flows:
@@ -406,6 +432,8 @@ components:
             order:write: Grants write access to the order
 
   schemas:
+  # Adding information in the model allows a better comprehension and self documentation
+  # component can be reused 
     Company:
       required:
         - id
@@ -415,14 +443,16 @@ components:
           type: integer
           format: int64
           description: id of the company
-          default: 51
+          default: 1
+          minimum: 1
         name:
           type: string
           description: wellknown name of the company
-          default: UnRicardSinonRien
+          default: Stark Industries
         internalReference:
           type: string
-          description: internal reference, usefull for communication 
+          default: Iron Man creator
+          description: internal reference, useful for communication 
     Companies:
       type: array
       items:
@@ -432,14 +462,25 @@ components:
       required:
         - orderId
         - customerId
+        - orderDetailId
         - shippingAddress
-      properties:
+      properties:  
         orderId:
           type: integer
           format: int64
+          default: 42
+          minimum: 1
           description: unique id to identify order
         customerId:
-          type: string
+          type: integer
+          format: int64
+          default: 7
+          description: unique id to identify a customer
+        orderDetailId:
+          type: integer  
+          format: int64
+          default: 51
+          description: unique id to identify detail order
         shippingAddress:
           $ref: "#/components/schemas/Address" 
     Orders:
@@ -452,8 +493,9 @@ components:
         - message
       properties:
         code:
-          type: integer
-          format: int32
+          type: string
+          default: ERR-30001
+          description: error code to communicate to support
         message:
           type: string
 
