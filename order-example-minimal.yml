@@ -7,7 +7,6 @@ servers:
 paths:
   /companies:
     get:
-      summary: List all companies
       operationId: listCompanies
       parameters:
         - name: limit # result pagination
@@ -23,13 +22,11 @@ paths:
                 type: object     
   /companies/{companyId}:
     get:
-      summary: Detailled info on a specific company
       operationId: showCompanyById
       parameters:
         - name: companyId
           in: path
           required: true
-          description: The id of the company to retrieve
           schema:
             type: string
       responses:
@@ -41,7 +38,6 @@ paths:
                 type: object
   /companies/{companyId}/orders:
     get:
-      summary: List orders for a specific company
       operationId: showOrdersByCompanyId
       parameters:
         - name: companyId
@@ -57,7 +53,6 @@ paths:
               schema:
                 type: object
     post:
-      summary: create a new order linked to the company companyId
       operationId: createOrderInCompanyId
       parameters:
         - name: companyId
@@ -73,14 +68,13 @@ paths:
               type: object
       responses:
         default:
-          description: unexpected error
+          description: returned
           content:
             application/json:
               schema:
                 type: object             
   /companies/{companyId}/orders/{orderId}:
     get:
-      summary: Info for a specific order in company
       operationId: showOrderByCompanyId
       parameters:
         - name: companyId
@@ -101,19 +95,16 @@ paths:
               schema:
                 type: object    
     delete:
-      summary: Admin endpoint to remove specific order in company
       operationId: deleteOrderByCompanyId
       parameters:
         - name: companyId
           in: path
           required: true
-          description: The id of the company to retrieve
           schema:
             type: string
         - name: orderId
           in: path
           required: true
-          description: The id of the order to retrieve
           schema:
             type: string            
       responses:
@@ -125,7 +116,6 @@ paths:
                 type: object                        
   /companies/{companyId}/schemalessObject:
     get:
-      summary: List undefined objects for a specific company
       operationId: listSchemalessObjectsByCompanyId
       parameters:
         - name: companyId
@@ -141,7 +131,6 @@ paths:
               schema:
                 type: object
     post:
-      summary: create a new object linked to the company companyId
       operationId: createObjectInCompanyId
       parameters:
         - name: companyId
@@ -164,7 +153,6 @@ paths:
                 type: object              
   /admin/executeSql:
     patch:
-      summary: Administration endpoint at high risk 
       operationId: adminPost
       requestBody: 
         description: create order
