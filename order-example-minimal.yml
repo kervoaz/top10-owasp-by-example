@@ -1,0 +1,181 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0 # allow versioning on the API specification(this file)
+  title: OpenAPI specification for Order 
+servers:
+  - url: http://localhost.swagger.io/v1
+paths:
+  /companies:
+    get:
+      summary: List all companies
+      operationId: listCompanies
+      parameters:
+        - name: limit # result pagination
+          in: query # can be also passed in header
+          schema:
+            type: integer
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object     
+  /companies/{companyId}:
+    get:
+      summary: Detailled info on a specific company
+      operationId: showCompanyById
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object
+  /companies/{companyId}/orders:
+    get:
+      summary: List orders for a specific company
+      operationId: showOrdersByCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: create a new order linked to the company companyId
+      operationId: createOrderInCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        description: create order
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                type: object             
+  /companies/{companyId}/orders/{orderId}:
+    get:
+      summary: Info for a specific order in company
+      operationId: showOrderByCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string            
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object    
+    delete:
+      summary: Admin endpoint to remove specific order in company
+      operationId: deleteOrderByCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          description: The id of the company to retrieve
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          required: true
+          description: The id of the order to retrieve
+          schema:
+            type: string            
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object                        
+  /companies/{companyId}/schemalessObject:
+    get:
+      summary: List undefined objects for a specific company
+      operationId: listSchemalessObjectsByCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: create a new object linked to the company companyId
+      operationId: createObjectInCompanyId
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody: 
+        description: create object
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object              
+  /admin/executeSql:
+    patch:
+      summary: Administration endpoint at high risk 
+      operationId: adminPost
+      requestBody: 
+        description: create order
+        content:
+          '*/*':
+            schema:
+              type: string # malicious command can be injected to produce unexpected results
+      responses:
+        default:
+          description: returned
+          content:
+            application/json:
+              schema:
+                type: object                
