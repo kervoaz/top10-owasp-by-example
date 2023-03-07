@@ -1,4 +1,4 @@
-extends: spectral:oas
+extends: [[spectral:oas, off]]
 rules:
   geodis-OWASP08-oas3-request-support-json:
     description: Every request MUST support `application/json` media type
@@ -7,6 +7,6 @@ rules:
     recommended: true
     severity: error
     message: "{{description}}: {{error}}"
-    given: $.paths.[*].requestBody.content[?(@property.indexOf('json') === -1)]^
+    given: $.paths..requestBody.content[?(@property.indexOf('json') === -1)]
     then:
       function: falsy  

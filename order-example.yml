@@ -58,6 +58,7 @@ servers:
   - url: http://localhost.swagger.io/v1
 
 security: 
+# OWASP02:BROKEN AUTHENTICATION
  # security at API level. All endpoints of this API are protected by an API Key
   - ApiKeyAuth:
     - Ocp-Apim-Subscription-Key

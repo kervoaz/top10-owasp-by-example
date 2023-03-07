@@ -1,0 +1,40 @@
+extends: [[spectral:oas, recommended]]
+functions:
+  [objectRequiredProperties,requiredPropertyExample]
+rules:
+  # Any required objects must also have a required child parameter
+  # required-object-params:
+  #   severity: error
+  #   given: $.paths.*[post].requestBody.content.*.[?(@.required)]
+  #   then:
+  #     function: objectRequiredProperties
+  # All required properties must have an example
+  required-property-example:
+    severity: error
+    given: $..[?(@.type == 'object' && @.required)]
+    then:
+      - function: requiredPropertyExample
+
+  oas3-api-security-defined:
+    description: Check API security is defined at top level
+    severity: "error"
+    given: "$"
+    then:
+      field: 'security'
+      function: truthy
+
+  oas3-operation-security-defined:
+    description: Check operation security is defined
+    severity: "error"
+    given: "$.paths.*.*"
+    then:
+      field: 'security'
+      function: truthy
+
+  oas3-operation-security-scopes-defined:
+    description: Check operation security's bearer_auth is defined
+    severity: "error"
+    given: "$.paths[*][*]..security.*"
+    then:
+      field: 'bearer_auth'
+      function: truthy
